@@ -29,22 +29,6 @@ namespace VeniceTests
                 AssertMovingAverageValue(candles, MovingAverageType.SIMPLE, period);
                 AssertMovingAverageValue(candles, MovingAverageType.WEIGHTED, period);
             }
-
-            //for (int i = 4; i < candles.Count; i++)
-            //{
-            //    var sma5 = Math.Round(candles[i].GetMovingAverage(MovingAverageType.SIMPLE, 5).Value, 6);
-            //    File.AppendAllText("test.txt", $"{i} - SMA_5: {sma5}");
-            //    var wma5 = Math.Round(candles[i].GetMovingAverage(MovingAverageType.WEIGHTED, 5).Value, 6);
-            //    File.AppendAllText("test.txt", $" - WMA_5: {wma5}");
-            //    if (i >= 19)
-            //    {
-            //        var sma20 = Math.Round(candles[i].GetMovingAverage(MovingAverageType.SIMPLE, 20).Value, 6);
-            //        File.AppendAllText("test.txt", $"{i} - SMA_20: {sma20}");
-            //        var wma20 = Math.Round(candles[i].GetMovingAverage(MovingAverageType.WEIGHTED, 20).Value, 6);
-            //        File.AppendAllText("test.txt", $" - WMA_20: {wma20}");
-            //    }
-            //    File.AppendAllText("test.txt", "\n");
-            //}
         }
 
         private static void AssertMovingAverageValue(List<CandleValue> candles, MovingAverageType movingAverageType, int period)

@@ -2,13 +2,14 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
+	<PackageLicenseFile>LICENSE</PackageLicenseFile>
     <LangVersion>9.0</LangVersion>
+    <Title>Venice Personal Finance library</Title>
+    <Authors>NandayDev</Authors>
+    <Company>www.nanday.dev</Company>
+    <PackageProjectUrl>www.nanday.dev</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/NandayDev/Venice</RepositoryUrl>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="MailKit" Version="2.15.0" />
-    <PackageReference Include="MimeKit" Version="2.15.0" />
-  </ItemGroup>
 
   <ItemGroup>
     <Compile Update="Properties\EnumResources.Designer.cs">
@@ -23,6 +24,10 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>EnumResources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+	<None Include="..\LICENSE" Pack="true" PackagePath=""/>
   </ItemGroup>
 
 </Project>

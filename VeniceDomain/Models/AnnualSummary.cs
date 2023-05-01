@@ -6,21 +6,18 @@ namespace VeniceDomain.Models
 {
     public class AnnualSummary
     {
-        private AnnualSummary(IEnumerable<Paycheck> paychecks, List<Expense> expenses, DateTime startingDate, DateTime referenceDate, int targetSavingRate, Dictionary<int, decimal> otherGains, List<Expense> fixedExpenses)
+        private AnnualSummary(IEnumerable<IncomeEvent> incomeEvents, List<Expense> expenses, DateTime startingDate, DateTime referenceDate, int targetSavingRate, List<Expense> fixedExpenses)
         {
-            Paychecks = paychecks;
+            IncomeEvents = incomeEvents;
             Expenses = expenses;
             StartingDate = startingDate;
             ReferenceDate = referenceDate;
             TargetSavingRate = targetSavingRate;
             FixedExpenses = fixedExpenses;
-            _otherGainsPerMonth = otherGains;
             Initialize();
         }
 
-        private readonly Dictionary<int, decimal> _otherGainsPerMonth;
-
-        public IEnumerable<Paycheck> Paychecks { get; }
+        public IEnumerable<IncomeEvent> IncomeEvents { get; }
 
         public List<Expense> Expenses { get; }
 
@@ -54,9 +51,7 @@ namespace VeniceDomain.Models
 
         public decimal RealMonthlyCostOfLiving => RealAnnualCostOfLiving / 12m;
 
-        public Dictionary<string, decimal> ExpensesPerCategory { get; private set; }
-
-        public Dictionary<int, decimal> EarningsPerMonth { get; private set; }
+        public Dictionary<string, decimal> ExpensesPerCategory { get; } = new Dictionary<string, decimal>();
 
         public decimal ExpensesTotal { get; private set; }
 
@@ -64,37 +59,11 @@ namespace VeniceDomain.Models
 
         private void Initialize()
         {
-            EarningsPerMonth = new Dictionary<int, decimal>();
-            for (int i = 1; i <= 12; i++)
-            {
-                EarningsPerMonth[i] = 0m;
-                Paycheck monthPaycheck = Paychecks.SingleOrDefault(p => p.Month == i);
-                if (monthPaycheck != null)
-                {
-                    EarningsPerMonth[i] += monthPaycheck.NetSalary;
-                }
-                else
-                {
-                    EarningsPerMonth[i] += Paychecks.ElementAtOrDefault(i - 1)?.NetSalary ?? Paychecks.Average(p => p.NetSalary);
-                }
-                if (_otherGainsPerMonth.TryGetValue(i, out decimal gain))
-                {
-                    EarningsPerMonth[i] += gain;
-                }
-            }
-
-            Paycheck tredicesima = Paychecks.SingleOrDefault(p => p.Month == 13);
-            if (tredicesima != null)
-            {
-                EarningsPerMonth[12] += tredicesima.NetSalary;
-            }
-
             int daysBetweenStartingAndReferenceDate = (int)(ReferenceDate - StartingDate).TotalDays + 1;
 
-            TotalEarnings = EarningsPerMonth.Sum(p => p.Value);
+            TotalEarnings = IncomeEvents.Sum(p => p.Amount);
             PlannedMonthlySavingAmount = TargetSavingRate / 1200m * TotalEarnings;
             PlannedAnnualBudget = TotalEarnings - PlannedAnnualSavingAmount - FixedExpenses.Sum(e => e.Amount);
-            ExpensesPerCategory = new Dictionary<string, decimal>();
             var expensesByCategory = Expenses.GroupBy(e => e.Category?.Name ?? "");
             foreach (IGrouping<string, Expense> group in expensesByCategory)
             {
@@ -118,25 +87,24 @@ namespace VeniceDomain.Models
 
         public class Builder
         {
-            private readonly List<Paycheck> _paychecks = new List<Paycheck>();
+            private readonly List<IncomeEvent> _incomeEvents = new List<IncomeEvent>();
             private readonly List<Expense> _expenses = new List<Expense>();
             private DateTime _referenceDate = DateTime.Now.Date;
             private DateTime? _startingDate = null;
             private int _targetSavingRate = 50;
             private readonly List<Expense> _fixedExpenses = new List<Expense>();
-            private readonly Dictionary<int, decimal> _otherGainsPerMonth = new Dictionary<int, decimal>();
 
-            public Builder AddPaycheck(Paycheck paycheck)
+            public Builder AddIncomeEvent(IncomeEvent incomeEvent)
             {
-                ArgsValidationUtil.NotNull(paycheck, nameof(paycheck));
-                _paychecks.Add(paycheck);
+                ArgsValidationUtil.NotNull(incomeEvent, nameof(incomeEvent));
+                _incomeEvents.Add(incomeEvent);
                 return this;
             }
 
-            public Builder AddPaychecks(IEnumerable<Paycheck> paychecks)
+            public Builder AddIncomeEvents(IEnumerable<IncomeEvent> incomeEvents)
             {
-                ArgsValidationUtil.NotNull(paychecks, nameof(paychecks));
-                _paychecks.AddRange(paychecks);
+                ArgsValidationUtil.NotNull(incomeEvents, nameof(incomeEvents));
+                _incomeEvents.AddRange(incomeEvents);
                 return this;
             }
 
@@ -187,28 +155,17 @@ namespace VeniceDomain.Models
                 return this;
             }
 
-            public Builder AddGain(DateTime date, decimal amount)
-            {
-                ArgsValidationUtil.NotZero(amount, nameof(amount));
-                if (!_otherGainsPerMonth.ContainsKey(date.Month))
-                {
-                    _otherGainsPerMonth.Add(date.Month, 0m);
-                }
-                _otherGainsPerMonth[date.Month] += amount;
-                return this;
-            }
-
             public AnnualSummary Build()
             {
-                if (_paychecks.Any(p => p.Year != _referenceDate.Year))
+                if (_incomeEvents.Any(p => p.DateTime.Year != _referenceDate.Year))
                 {
-                    throw new ArgumentException("All paychecks must be from the same year of given reference date");
+                    throw new ArgumentException("All income events must be from the same year of given reference date");
                 }
                 if (_startingDate == null)
                 {
                     _startingDate = _referenceDate.AddDays(-_referenceDate.DayOfYear + 1);
                 }
-                return new AnnualSummary(_paychecks.OrderBy(p => p.Month), _expenses, _startingDate.Value, _referenceDate, _targetSavingRate, _otherGainsPerMonth, _fixedExpenses);
+                return new AnnualSummary(_incomeEvents.OrderBy(p => p.DateTime), _expenses, _startingDate.Value, _referenceDate, _targetSavingRate, _fixedExpenses);
             }
         }
     }

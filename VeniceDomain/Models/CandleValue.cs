@@ -69,10 +69,12 @@ namespace VeniceDomain.Models
         /// <summary>
         /// Returns indicator of given type <typeparamref name="TIndicator"/> or null if not present
         /// </summary>
-        internal TIndicator GetIndicator<TIndicator>(string key)
+        internal TIndicator? GetIndicator<TIndicator>(string key)
             where TIndicator : BaseTechnicalAnalysisIndicator
         {
-            return indicators.GetValueOrDefault(key) as TIndicator;
+            if (false == indicators.ContainsKey(key))
+                return null;
+            return (TIndicator)indicators[key];
         }
 
         #endregion

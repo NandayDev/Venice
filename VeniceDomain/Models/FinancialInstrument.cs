@@ -25,5 +25,10 @@ namespace VeniceDomain.Models
         {
             return 1576195124 + EqualityComparer<string>.Default.GetHashCode(Isin);
         }
+
+        public FinancialInstrument Clone()
+        {
+            return (FinancialInstrument)MemberwiseClone();
+        }
     }
 }

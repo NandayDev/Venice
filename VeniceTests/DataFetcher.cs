@@ -48,11 +48,13 @@ namespace VeniceTests
                         GenerateCandleValue(12.08M, 12.22M, 12.274M, 12.018M), // 2 -- 
                         GenerateCandleValue(12.276M, 12.27M, 12.384M, 12.2M), // 3 -- 
                         GenerateCandleValue(12.268M, 12.248M, 12.32M, 12.186M), // 4 - SMA 5: 11,8656 - WMA 5: 12,04853
+
                         GenerateCandleValue(12.206M, 12.25M, 12.288M, 12.136M), // 5 - SMA 5: 12,034  - WMA 5: 12,162 
                         GenerateCandleValue(12.32M, 12.342M, 12.476M, 12.3M), // 6 - SMA 5: 12,230 - WMA 5: 12,2573
                         GenerateCandleValue(12.262M, 12.48M, 12.52M, 12.234M), // 7 - SMA 5: 12,2664 - WMA 5: 12,268 
                         GenerateCandleValue(12.432M, 12.464M, 12.502M, 12.294M), //8 - SMA 5: 12,2976 - WMA 5: 12,3232 
                         GenerateCandleValue(12.584M, 12.218M, 12.63M, 12.190M), // 9 - SMA 5: 12,3608 - WMA 5: 12,41867
+
                         GenerateCandleValue(12.132M, 12.06M, 12.302M, 12.048M), // 10 - SMA 5: 12,346  - WMA 5: 12,3424 
                         GenerateCandleValue(11.984M, 12.086M, 12.198M, 11.966M), // 11 - SMA 5: 12,2788  - WMA 5: 12,22173 
                         GenerateCandleValue(12.208M, 12.42M, 12.42M, 12.074M), // 12 - SMA 5: 12,268  - WMA 5: 12,19813

@@ -6,8 +6,6 @@ namespace VeniceDomain.Models
 {
     public class ItalianSeverancePaySummary
     {
-        private const int CURRENT_YEAR = 2021;
-
         private static readonly List<(int soglia, decimal tassazione)> soglieIrpef = new List<(int soglia, decimal tassazione)>
         {
             (15000, 0.23m),
@@ -17,11 +15,14 @@ namespace VeniceDomain.Models
             (int.MaxValue, 0.43m),
         };
 
-        private ItalianSeverancePaySummary(Dictionary<int, decimal> severancesEachYear)
+        private ItalianSeverancePaySummary(Dictionary<int, decimal> severancesEachYear, int targetYear)
         {
             this.severancesEachYear = severancesEachYear;
+            this.targetYear = targetYear;
             InitializeValues();
         }
+
+        private readonly int targetYear;
 
         private readonly Dictionary<int, decimal> severancesEachYear = new Dictionary<int, decimal>();
 
@@ -35,7 +36,7 @@ namespace VeniceDomain.Models
         {
             int startingYear = severancesEachYear.Keys.Min();
             int currentYear = startingYear;
-            while (currentYear < CURRENT_YEAR)
+            while (currentYear < targetYear)
             {
                 IncrementGrossAmountByYearlyValue(currentYear);
                 currentYear += 1;
@@ -43,8 +44,8 @@ namespace VeniceDomain.Models
 
             NetAmountAtTheEndOfLastYear = GetNetValue(currentYear);
 
-            IncrementGrossAmountByYearlyValue(CURRENT_YEAR);
-            ExpectedNetAmountAtTheEndOfCurrentYear = GetNetValue(CURRENT_YEAR);
+            IncrementGrossAmountByYearlyValue(targetYear);
+            ExpectedNetAmountAtTheEndOfCurrentYear = GetNetValue(targetYear);
         }
 
         private decimal GetYearlyInflation(int year)
@@ -63,7 +64,7 @@ namespace VeniceDomain.Models
                 2019 => 0.005m,
                 2020 => -0.003m,
                 2021 => 0.020m,
-                _ => throw new ArgumentOutOfRangeException()
+                _ => 0.03m
             };
         }
 
@@ -76,36 +77,40 @@ namespace VeniceDomain.Models
 
         private decimal GetValueForSogliaIrpef(decimal baseImponibile, (int soglia, decimal tassazione) sogliaIrpef, (int soglia, decimal tassazione)? sogliaPrecedente = null)
         {
-            if (sogliaPrecedente != null)
+            if (sogliaPrecedente == null)
             {
-                if (baseImponibile < sogliaPrecedente.Value.soglia)
-                {
-                    return 0m;
-                }
+                sogliaPrecedente = (0, 0m);
             }
+            if (baseImponibile < sogliaPrecedente.Value.soglia)
+            {
+                return 0m;
+            }
+            decimal baseImponibileSoglia;
             if (baseImponibile > sogliaIrpef.soglia)
             {
-                return sogliaIrpef.soglia * sogliaIrpef.tassazione;
+                baseImponibileSoglia = sogliaIrpef.soglia - sogliaPrecedente.Value.soglia;
+                //return sogliaIrpef.soglia * sogliaIrpef.tassazione;
             }
             else
             {
-                return baseImponibile * sogliaIrpef.tassazione;
+                baseImponibileSoglia = baseImponibile - sogliaPrecedente.Value.soglia;
             }
+            return baseImponibileSoglia * sogliaIrpef.tassazione;
         }
-        
+
         private decimal GetNetValue(int currentYear)
         {
             int startingYear = severancesEachYear.Keys.Min();
             int yearsOfWork = currentYear - startingYear;
-            decimal baseImponibile;
-            if ((GrossAmount * 12m / yearsOfWork) > GrossAmount)
-            {
-                baseImponibile = GrossAmount;
-            }
-            else
-            {
-                baseImponibile = GrossAmount * 12m;
-            }
+            decimal baseImponibile = GrossAmount;
+            //if ((GrossAmount * 12m / yearsOfWork) > GrossAmount)
+            //{
+            //    baseImponibile = GrossAmount;
+            //}
+            //else
+            //{
+            //    baseImponibile = GrossAmount * 12m;
+            //}
             decimal irpef1 = GetValueForSogliaIrpef(baseImponibile, soglieIrpef[0]);
             decimal irpef2 = GetValueForSogliaIrpef(baseImponibile, soglieIrpef[1], soglieIrpef[0]);
             decimal irpef3 = GetValueForSogliaIrpef(baseImponibile, soglieIrpef[2], soglieIrpef[1]);
@@ -118,13 +123,10 @@ namespace VeniceDomain.Models
         public class Builder
         {
             private readonly Dictionary<int, decimal> severancesEachYear = new Dictionary<int, decimal>();
+            private int targetYear = DateTime.Now.Year;
 
             public Builder AddYearlySeverance(int year, decimal amount)
             {
-                if (year < 2010 || year > CURRENT_YEAR)
-                {
-                    throw new ArgumentOutOfRangeException("Year must be between 2010 and 2021");
-                }
                 if (!severancesEachYear.ContainsKey(year))
                 {
                     severancesEachYear[year] = 0;
@@ -133,9 +135,15 @@ namespace VeniceDomain.Models
                 return this;
             }
 
+            public Builder SetTargetYear(int targetYear)
+            {
+                this.targetYear = targetYear;
+                return this;
+            }
+
             public ItalianSeverancePaySummary Build()
             {
-                return new ItalianSeverancePaySummary(severancesEachYear);
+                return new ItalianSeverancePaySummary(severancesEachYear, targetYear);
             }
         }
     }

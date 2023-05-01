@@ -21,6 +21,7 @@ namespace VeniceTests
             ItalianSeverancePaySummary summary = new ItalianSeverancePaySummary.Builder()
                 .AddYearlySeverance(2020, 2550m)
                 .AddYearlySeverance(2021, 3400m)
+                .SetTargetYear(2021)
                 .Build();
 
             Assert.Equal(1988.53m, summary.NetAmountAtTheEndOfLastYear, 2);

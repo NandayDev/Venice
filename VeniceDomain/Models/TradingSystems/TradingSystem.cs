@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using VeniceDomain.Enums;
-using VeniceDomain.Interfaces;
 using VeniceDomain.Models.Base;
 using VeniceDomain.Models.TradingSystems;
 using VeniceDomain.Services;
@@ -47,7 +45,7 @@ namespace VeniceDomain.Models
 
         public event Action<List<TradingSystemOrder>> OnShouldExecuteOrder;
 
-        public TradingSystemState State { get; set; } = TradingSystemState.IDLE;
+        public TradingSystemState State { get; private set; } = TradingSystemState.IDLE;
 
         public virtual List<CandleValue> Candles { get; set; } = new List<CandleValue>();
 
@@ -57,7 +55,7 @@ namespace VeniceDomain.Models
 
         public List<TradingSystemOrder> OrdersSent { get; } = new List<TradingSystemOrder>();
 
-        protected static TradingSystemParameter UNINITIALIZED_PARAMETER = new TradingSystemParameter(null, 0);
+        protected static readonly TradingSystemParameter UNINITIALIZED_PARAMETER = new TradingSystemParameter("", 0);
 
         #endregion
 
@@ -107,7 +105,7 @@ namespace VeniceDomain.Models
         {
             foreach (TradingOrderType type in ordersToSend)
             {
-                yield return new TradingSystemOrder(FinancialInstrument, type, Candles[^1]);
+                yield return new TradingSystemOrder(FinancialInstrument, type, Candles[^1], Candles.Count - 1);
             }
         }
 
@@ -160,10 +158,13 @@ namespace VeniceDomain.Models
         {
             foreach (TradingSystemParameter parameter in Parameters)
             {
-                parameter.OnCurrentValueChanged += delegate (decimal value)
+                if (parameter != null)
                 {
-                    OnParameterCurrentValueChanged(parameter, value);
-                };
+                    parameter.OnCurrentValueChanged += delegate (decimal value)
+                    {
+                        OnParameterCurrentValueChanged(parameter, value);
+                    };
+                }
             }
         }
 

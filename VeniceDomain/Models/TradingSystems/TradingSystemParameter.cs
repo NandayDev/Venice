@@ -12,8 +12,15 @@ namespace VeniceDomain.Models.TradingSystems
             MaxValue = currentValue;
         }
 
+        public TradingSystemParameter(string name, bool currentValue)
+            : this(name, currentValue ? 1 : 0)
+        {
+            Step = 1;
+        }
+
         public TradingSystemParameter(string name, decimal minValue, decimal step, decimal maxValue)
         {
+            ArgsValidationUtil.LowerThan(minValue, maxValue, true, name);
             Name = name;
             MinValue = minValue;
             Step = step;
@@ -40,8 +47,10 @@ namespace VeniceDomain.Models.TradingSystems
             }
         }
 
+        public bool CurrentBooleanValue => CurrentValue == 1 ? true : (CurrentValue == 0 ? false : throw new ArgumentException());
+
         public event Action<decimal> OnCurrentValueChanged;
 
-        public TradingSystemParameter Clone() => MemberwiseClone() as TradingSystemParameter;
+        public TradingSystemParameter Clone() => (MemberwiseClone() as TradingSystemParameter)!;
     }
 }

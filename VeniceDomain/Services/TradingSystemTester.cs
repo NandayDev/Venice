@@ -43,7 +43,7 @@ namespace VeniceDomain.Services
         /// <summary>
         /// Generates a single <see cref="TradingSystemReport"/> with given <see cref="TradingSystem"/>, based on the current TradingSystemParameters
         /// </summary>
-        public TradingSystemReport GetSingleReport(List<CandleValue> candleValues, bool shouldCalculateIndicators, out List<TradingOperation> operations)
+        public TradingSystemReport GetSingleReport(List<CandleValue> candleValues, out List<TradingOperation> operations)
         {
             var orders = tradingSystem.GetAllOrders(candleValues, true).ToList();
             var transactions = new List<Transaction>();
@@ -52,15 +52,18 @@ namespace VeniceDomain.Services
                 TradingSystemOrder order = orders[i];
                 // The order becomes effective on the next candle, since it's impossible to buy on the close, //
                 // which determines the trading system status //
-                int candleValueIndex = candleValues.IndexOf(order.CandleThatMeetsConditions);
-                CandleValue nextCandleAfterOrder = candleValues.ElementAtOrDefault(candleValueIndex + 1);
-                if (nextCandleAfterOrder != null)
+                CandleValue? nextCandle = null;
+                if (order.CandleThatMeetsConditionIndex < tradingSystem.Candles.Count - 1)
+                {
+                    nextCandle = tradingSystem.Candles[order.CandleThatMeetsConditionIndex + 1];
+                }
+                if (nextCandle != null)
                 {
                     transactions.Add(
                         new Transaction(
                             order.FinancialInstrument,
-                            nextCandleAfterOrder.Open,
-                            nextCandleAfterOrder.StartDate,
+                            nextCandle.Open,
+                            nextCandle.StartDate,
                             null,
                             order.OrderType, 
                             0
@@ -70,24 +73,28 @@ namespace VeniceDomain.Services
                     if (order.FlatAtNextClose)
                     {
                         // Order is closed at this candle's close //
-                        decimal transactionClosePrice = nextCandleAfterOrder.Close;
-                        if (order.StopLossPrice != null)
+                        decimal transactionClosePrice = nextCandle.Close;
+                        bool isStopLoss = false;
+                        bool isTakeProfit = false;
+                        if (order.StopLossPercentage != null)
                         {
                             switch (order.OrderType)
                             {
                                 case TradingOrderType.BUY:
-                                    decimal stopLossPrice = nextCandleAfterOrder.Open * (1 - (order.StopLossPrice.Value / 100m));
-                                    if (nextCandleAfterOrder.Low <= stopLossPrice)
+                                    decimal stopLossPrice = nextCandle.Open * (1 - (order.StopLossPercentage.Value / 100m));
+                                    if (nextCandle.Low <= stopLossPrice)
                                     {
                                         transactionClosePrice = stopLossPrice;
+                                        isStopLoss = true;
                                     }
                                     break;
 
                                 case TradingOrderType.SHORT_SELL:
-                                    stopLossPrice = nextCandleAfterOrder.Open * (1 + (order.StopLossPrice.Value / 100m));
-                                    if (nextCandleAfterOrder.High >= stopLossPrice)
+                                    stopLossPrice = nextCandle.Open * (1 + (order.StopLossPercentage.Value / 100m));
+                                    if (nextCandle.High >= stopLossPrice)
                                     {
                                         transactionClosePrice = stopLossPrice;
+                                        isStopLoss = true;
                                     }
                                     break;
 
@@ -95,23 +102,25 @@ namespace VeniceDomain.Services
                                     throw new ArgumentException("Order type can't be other than buy or short sell");
                             }
                         }
-                        if (order.TakeProfitPrice != null)
+                        else if (order.TakeProfitPercentage != null)
                         {
                             switch(order.OrderType)
                             {
                                 case TradingOrderType.BUY:
-                                    decimal takeProfitPrice = nextCandleAfterOrder.Open * (1 + (order.TakeProfitPrice.Value / 100m));
-                                    if (nextCandleAfterOrder.High > takeProfitPrice)
+                                    decimal takeProfitPrice = nextCandle.Open * (1 + (order.TakeProfitPercentage.Value / 100m));
+                                    if (nextCandle.High > takeProfitPrice)
                                     {
                                         transactionClosePrice = takeProfitPrice;
+                                        isTakeProfit = true;
                                     }
                                     break;
 
                                 case TradingOrderType.SHORT_SELL:
-                                    takeProfitPrice = nextCandleAfterOrder.Open * (1 - (order.TakeProfitPrice.Value / 100m));
-                                    if (nextCandleAfterOrder.Low < takeProfitPrice)
+                                    takeProfitPrice = nextCandle.Open * (1 - (order.TakeProfitPercentage.Value / 100m));
+                                    if (nextCandle.Low < takeProfitPrice)
                                     {
                                         transactionClosePrice = takeProfitPrice;
+                                        isTakeProfit = true;
                                     }
                                     break;
 
@@ -123,10 +132,13 @@ namespace VeniceDomain.Services
                             new Transaction(
                                 order.FinancialInstrument,
                                 transactionClosePrice,
-                                nextCandleAfterOrder.EndDate,
+                                nextCandle.EndDate,
                                 null,
                                 order.OrderType == TradingOrderType.BUY ? TradingOrderType.SELL : TradingOrderType.SHORT_BUY,
-                                0));
+                                0, 
+                                isStopLoss, 
+                                isTakeProfit)
+                            );
                     }
                 }
             }
@@ -159,7 +171,7 @@ namespace VeniceDomain.Services
         /// <summary>
         /// Generates all possible reports with given <see cref="TradingSystem"/> and all values, from min to max, of the TradingSystemParameters
         /// </summary>
-        public List<TradingSystemReport> GetReports(List<CandleValue> candleValues, bool shouldCalculateIndicators)
+        public List<TradingSystemReport> GetReports(List<CandleValue> candleValues)
         {
             List<TradingSystemReport> reportList = new List<TradingSystemReport>();
 
@@ -176,6 +188,10 @@ namespace VeniceDomain.Services
                     parameter.CurrentValue += parameter.Step)
                 {
                     l.Add(parameter.CurrentValue);
+                    if (parameter.Step == 0)
+                    {
+                        break;
+                    }
                 }
             }
             var tradingSystemCombinations = new List<List<TradingSystemParameter>>();
@@ -189,7 +205,7 @@ namespace VeniceDomain.Services
                     tradingSystem.Parameters[k].CurrentValue = parameterList[k].CurrentValue;
                 }
                 tradingSystem.ResetStatus();
-                reportList.Add(GetSingleReport(candleValues, shouldCalculateIndicators, out _));
+                reportList.Add(GetSingleReport(candleValues, out _));
                 int progress = (int)(i / (double)tradingSystemCombinations.Count * 100);
                 if (progress != lastProgressSent)
                 {

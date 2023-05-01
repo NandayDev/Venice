@@ -20,16 +20,22 @@ namespace VeniceDomain.Utilities
 
         public static long GetTicks(this TimeComponent timeComponent)
         {
-            return timeComponent switch
+            switch (timeComponent)
             {
-                TimeComponent.SECOND => TimeSpan.FromSeconds(1).Ticks,
-                TimeComponent.MINUTE => TimeComponent.SECOND.GetTicks() * 60,
-                TimeComponent.HOUR => TimeComponent.MINUTE.GetTicks() * 60,
-                TimeComponent.DAY => TimeComponent.HOUR.GetTicks() * 24,
-                TimeComponent.WEEK => TimeComponent.DAY.GetTicks() * 7,
-                TimeComponent.YEAR => TimeComponent.DAY.GetTicks() * 365,
-                _ => throw new ArgumentException(),
-            };
+                case TimeComponent.SECOND:
+                    return TimeSpan.FromSeconds(1).Ticks;
+                case TimeComponent.MINUTE:
+                    return TimeComponent.SECOND.GetTicks() * 60;
+                case TimeComponent.HOUR:
+                    return TimeComponent.MINUTE.GetTicks() * 60;
+                case TimeComponent.DAY:
+                    return TimeComponent.HOUR.GetTicks() * 24;
+                case TimeComponent.WEEK:
+                    return TimeComponent.DAY.GetTicks() * 7;
+                case TimeComponent.YEAR:
+                    return TimeComponent.DAY.GetTicks() * 365;
+            }
+            throw new ArgumentException();
         }
 
         public static bool AreDatesInTheSameWeek(DateTime date1, DateTime date2)

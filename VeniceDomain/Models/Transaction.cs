@@ -9,7 +9,7 @@ namespace VeniceDomain.Models
         {
         }
 
-        public Transaction(FinancialInstrument financialInstrument, decimal executionPrice, DateTime executionTime, TradingOrder originalOrder,
+        public Transaction(FinancialInstrument financialInstrument, decimal executionPrice, DateTime executionTime, TradingOrder? originalOrder,
             TradingOrderType orderType, int quantity)
         {
             FinancialInstrument = financialInstrument;
@@ -20,7 +20,20 @@ namespace VeniceDomain.Models
             OriginalOrder = originalOrder;
         }
 
-        internal Transaction(TradingOrder originalOrder, decimal executionPrice, DateTime executionTime)
+        public Transaction(FinancialInstrument financialInstrument, decimal executionPrice, DateTime executionTime, TradingOrder? originalOrder,
+            TradingOrderType orderType, int quantity, bool isStopLoss, bool isTakeProfit)
+        {
+            FinancialInstrument = financialInstrument;
+            OrderType = orderType;
+            Quantity = quantity;
+            ExecutionPrice = executionPrice;
+            ExecutionTime = executionTime;
+            OriginalOrder = originalOrder;
+            IsStopLoss = isStopLoss;
+            IsTakeProfit = isTakeProfit;
+        }
+
+        internal Transaction(TradingOrder? originalOrder, decimal executionPrice, DateTime executionTime)
         {
             ExecutionPrice = executionPrice;
             ExecutionTime = executionTime;
@@ -32,7 +45,7 @@ namespace VeniceDomain.Models
         /// </summary>
         public TransactionType Type { get; set; }
 
-        public FinancialInstrument FinancialInstrument { get; set; }
+        public FinancialInstrument? FinancialInstrument { get; set; }
 
         public TradingOrderType OrderType { get; set; }
 
@@ -42,9 +55,13 @@ namespace VeniceDomain.Models
 
         public DateTime ExecutionTime { get; set; }
 
-        public TradingOrder OriginalOrder { get; set; }
+        public TradingOrder? OriginalOrder { get; set; }
 
         public decimal CommissionPaid { get; set; }
+
+        public bool IsStopLoss { get; }
+
+        public bool IsTakeProfit { get; }
 
         public override string ToString()
         {

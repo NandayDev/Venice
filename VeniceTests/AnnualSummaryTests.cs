@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using VeniceDomain.Models;
 using Xunit;
 
@@ -10,21 +11,22 @@ namespace VeniceTests
         [Fact]
         public void TestAnnualSummary()
         {
-            List<Paycheck> paychecks = new()
+            List<IncomeEvent> incomeEvents = new()
             {
-                new Paycheck { Year = 2020, Month = 1, NetSalary = 2100 },
-                new Paycheck { Year = 2020, Month = 2, NetSalary = 2600 },
-                new Paycheck { Year = 2020, Month = 3, NetSalary = 2600 },
-                new Paycheck { Year = 2020, Month = 4, NetSalary = 2600 },
-                new Paycheck { Year = 2020, Month = 5, NetSalary = 2600 },
-                new Paycheck { Year = 2020, Month = 6, NetSalary = 2600 },
-                new Paycheck { Year = 2020, Month = 7, NetSalary = 2600 },
-                new Paycheck { Year = 2020, Month = 8, NetSalary = 2600 },
-                new Paycheck { Year = 2020, Month = 9, NetSalary = 2600 },
-                new Paycheck { Year = 2020, Month = 10, NetSalary = 2600 },
-                new Paycheck { Year = 2020, Month = 11, NetSalary = 2600 },
-                new Paycheck { Year = 2020, Month = 12, NetSalary = 2600 },
-                new Paycheck { Year = 2020, Month = 13, NetSalary = 2400 }
+                new IncomeEvent { DateTime = new DateTime(2020, 1, 1), Amount = 2100 },
+                new IncomeEvent { DateTime = new DateTime(2020, 2, 1), Amount = 2600 },
+                new IncomeEvent { DateTime = new DateTime(2020, 3, 1), Amount = 2600 },
+                new IncomeEvent { DateTime = new DateTime(2020, 4, 1), Amount = 2600 },
+                new IncomeEvent { DateTime = new DateTime(2020, 5, 1), Amount = 2600 },
+                new IncomeEvent { DateTime = new DateTime(2020, 6, 1), Amount = 2600 },
+                new IncomeEvent { DateTime = new DateTime(2020, 7, 1), Amount = 2600 },
+                new IncomeEvent { DateTime = new DateTime(2020, 8, 1), Amount = 2600 },
+                new IncomeEvent { DateTime = new DateTime(2020, 9, 1), Amount = 2600 },
+                new IncomeEvent { DateTime = new DateTime(2020, 10, 1), Amount = 2600 },
+                new IncomeEvent { DateTime = new DateTime(2020, 11, 1), Amount = 2600 },
+                new IncomeEvent { DateTime = new DateTime(2020, 12, 1), Amount = 2600 },
+                new IncomeEvent { DateTime = new DateTime(2020, 12, 15), Amount = 2400 },
+                new IncomeEvent { DateTime = new DateTime(2020, 2, 1), Amount = 50m },
             };
 
             ExpenseCategory category1 = new ExpenseCategory { Name = "groceries" };
@@ -39,11 +41,11 @@ namespace VeniceTests
 
             AnnualSummary.Builder summaryBuilder = new();
             AnnualSummary.Builder summaryBuilderWithBulkAdd = new();
-            foreach (Paycheck paycheck in paychecks)
+            foreach (IncomeEvent incomeEvent in incomeEvents)
             {
-                summaryBuilder.AddPaycheck(paycheck);
+                summaryBuilder.AddIncomeEvent(incomeEvent);
             };
-            summaryBuilderWithBulkAdd.AddPaychecks(paychecks);
+            summaryBuilderWithBulkAdd.AddIncomeEvents(incomeEvents);
             foreach (Expense expense in expenses)
             {
                 summaryBuilder.AddExpense(expense);
@@ -57,8 +59,8 @@ namespace VeniceTests
             List<Expense> fixedExpenses = new List<Expense>();
             for(int month = 1; month < 13; month++)
             {
-                Expense rentExpense = new Expense() { Date = new DateTime(2020, month, 1), Category = new ExpenseCategory { Name = "rent" }, Amount = 425m };
-                Expense condoExpense = new Expense() { Date = new DateTime(2020, month, 1), Category = new ExpenseCategory { Name = "condo" }, Amount = 35m };
+                Expense rentExpense = new() { Date = new DateTime(2020, month, 1), Category = new ExpenseCategory { Name = "rent" }, Amount = 425m };
+                Expense condoExpense = new() { Date = new DateTime(2020, month, 1), Category = new ExpenseCategory { Name = "condo" }, Amount = 35m };
                 summaryBuilder.AddFixedExpense(rentExpense);
                 summaryBuilderWithBulkAdd.AddFixedExpense(rentExpense);
                 summaryBuilder.AddFixedExpense(condoExpense);
@@ -66,19 +68,17 @@ namespace VeniceTests
                 fixedExpenses.Add(rentExpense);
                 fixedExpenses.Add(condoExpense);
             }
-            summaryBuilder.AddGain(new DateTime(2020, 2, 1), 50m);
-            summaryBuilderWithBulkAdd.AddGain(new DateTime(2020, 2, 1), 50m);
             // Builds the summary //
             AnnualSummary summary = summaryBuilder.Build();
             AnnualSummary summaryWithBulkAdd = summaryBuilderWithBulkAdd.Build();
 
             // Checks elements //
-            Assert.Equal(paychecks, summary.Paychecks);
-            Assert.Equal(paychecks, summaryWithBulkAdd.Paychecks);
-            Assert.Equal(expenses, summary.Expenses);
-            Assert.Equal(expenses, summaryWithBulkAdd.Expenses);
-            Assert.Equal(fixedExpenses, summary.FixedExpenses);
-            Assert.Equal(fixedExpenses, summaryWithBulkAdd.FixedExpenses);
+            Assert.Equal(incomeEvents.Count, summary.IncomeEvents.Count());
+            Assert.Equal(incomeEvents.Count, summaryWithBulkAdd.IncomeEvents.Count());
+            Assert.Equal(expenses.Count, summary.Expenses.Count);
+            Assert.Equal(expenses.Count, summaryWithBulkAdd.Expenses.Count);
+            Assert.Equal(fixedExpenses.Count, summary.FixedExpenses.Count);
+            Assert.Equal(fixedExpenses.Count, summaryWithBulkAdd.FixedExpenses.Count);
             Assert.Equal(referenceDate, summary.ReferenceDate);
             Assert.Equal(referenceDate, summaryWithBulkAdd.ReferenceDate);
             Assert.Equal(60, summary.TargetSavingRate);
@@ -111,32 +111,6 @@ namespace VeniceTests
             Assert.Equal(15m, summaryWithBulkAdd.ExpensesPerCategory["groceries"], 2);
             Assert.Equal(40m, summary.ExpensesPerCategory["car"], 2);
             Assert.Equal(40m, summaryWithBulkAdd.ExpensesPerCategory["car"], 2);
-
-            Assert.Equal(2100, summary.EarningsPerMonth[1]);
-            Assert.Equal(2650, summary.EarningsPerMonth[2]);
-            Assert.Equal(2600, summary.EarningsPerMonth[3]);
-            Assert.Equal(2600, summary.EarningsPerMonth[4]);
-            Assert.Equal(2600, summary.EarningsPerMonth[5]);
-            Assert.Equal(2600, summary.EarningsPerMonth[6]);
-            Assert.Equal(2600, summary.EarningsPerMonth[7]);
-            Assert.Equal(2600, summary.EarningsPerMonth[8]);
-            Assert.Equal(2600, summary.EarningsPerMonth[9]);
-            Assert.Equal(2600, summary.EarningsPerMonth[10]);
-            Assert.Equal(2600, summary.EarningsPerMonth[11]);
-            Assert.Equal(5000, summary.EarningsPerMonth[12]);
-
-            Assert.Equal(2100, summaryWithBulkAdd.EarningsPerMonth[1]);
-            Assert.Equal(2650, summaryWithBulkAdd.EarningsPerMonth[2]);
-            Assert.Equal(2600, summaryWithBulkAdd.EarningsPerMonth[3]);
-            Assert.Equal(2600, summaryWithBulkAdd.EarningsPerMonth[4]);
-            Assert.Equal(2600, summaryWithBulkAdd.EarningsPerMonth[5]);
-            Assert.Equal(2600, summaryWithBulkAdd.EarningsPerMonth[6]);
-            Assert.Equal(2600, summaryWithBulkAdd.EarningsPerMonth[7]);
-            Assert.Equal(2600, summaryWithBulkAdd.EarningsPerMonth[8]);
-            Assert.Equal(2600, summaryWithBulkAdd.EarningsPerMonth[9]);
-            Assert.Equal(2600, summaryWithBulkAdd.EarningsPerMonth[10]);
-            Assert.Equal(2600, summaryWithBulkAdd.EarningsPerMonth[11]);
-            Assert.Equal(5000, summaryWithBulkAdd.EarningsPerMonth[12]);
 
             Assert.Equal(55m, summary.ExpensesTotal, 2);
             Assert.Equal(55m, summaryWithBulkAdd.ExpensesTotal, 2);

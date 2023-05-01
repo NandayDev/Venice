@@ -10,7 +10,7 @@ namespace VeniceDomain.Extensions
 {
     public static class CandleValueIndicatorExtension
     {
-        public static MovingAverage GetMovingAverage(this CandleValue candleValue, MovingAverageType movingAverageType, int period, IEnumerable<CandleValue> candles = null)
+        public static MovingAverage? GetMovingAverage(this CandleValue candleValue, MovingAverageType movingAverageType, int period, IEnumerable<CandleValue>? candles = null)
         {
             var indicatorKey = movingAverageType switch
             {
@@ -19,7 +19,7 @@ namespace VeniceDomain.Extensions
                 _ => throw new System.Exception(),
             };
 
-            MovingAverage average = candleValue.GetIndicator<MovingAverage>(indicatorKey);
+            MovingAverage? average = candleValue.GetIndicator<MovingAverage>(indicatorKey);
 
             if (average == null && candles != null)
             {
@@ -38,7 +38,7 @@ namespace VeniceDomain.Extensions
                 }
                 average = candleValue.GetIndicator<MovingAverage>(indicatorKey);
             }
-            if (average.Value == 0)
+            if (average?.Value == 0)
                 return null;
             return average;
         }
@@ -74,7 +74,7 @@ namespace VeniceDomain.Extensions
             throw new System.Exception();
         }
 
-        public static BollingerBand GetBollingerBand(this CandleValue candleValue, int period, decimal standardDeviationMultiplier, IEnumerable<CandleValue> candles = null)
+        public static BollingerBand? GetBollingerBand(this CandleValue candleValue, int period, decimal standardDeviationMultiplier, IEnumerable<CandleValue>? candles = null)
         {
             string indicatorKey = BollingerBand.GetIndicatorString(period, standardDeviationMultiplier);
             var bollingerBand = candleValue.GetIndicator<BollingerBand>(indicatorKey);
@@ -93,7 +93,7 @@ namespace VeniceDomain.Extensions
             service.GetAll();
         }
 
-        public static RelativeStrengthIndex GetRelativeStrengthIndex(this CandleValue candleValue, int period, IEnumerable<CandleValue> candles = null)
+        public static RelativeStrengthIndex GetRelativeStrengthIndex(this CandleValue candleValue, int period, IEnumerable<CandleValue>? candles = null)
         {
             string indicatorKey = RelativeStrengthIndex.GetIndicatorString(period);
             RelativeStrengthIndex relativeStrengthIndex = candleValue.GetIndicator<RelativeStrengthIndex>(indicatorKey);
